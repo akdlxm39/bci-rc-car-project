@@ -1,11 +1,13 @@
 """
-arduino_io.py
-- Async Arduino connection and send helper.
-- Prefer serial_asyncio if available; otherwise use a simple thread-based writer with pyserial.
+HM-10 BLE 모듈을 통한 Arduino 통신 유틸리티.
+
+- 장치 탐색 및 연결
+- 쓰기 모드 결정
+- 1바이트 제어 명령 전송
 """
 
 import sys, asyncio
-from bleak import BleakClient, BleakScanner, BleakError
+from bleak import BleakClient, BleakScanner
 
 SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 CHAR_UUID    = "0000ffe1-0000-1000-8000-00805f9b34fb"
@@ -21,13 +23,10 @@ def handle_notify(_, data: bytearray):
         print(f"\n[HM-10→PC RAW] {data}")
 
 async def _choose_write_response(client) -> bool:
-    """
-    서비스 디스커버리 후 characteristic properties를 보고 write 모드 결정.
-    (get_services 경고 제거: client.services 사용)
-    """
+    """서비스 탐색 후 특성(characteristic) 속성을 보고 write 모드를 결정한다."""
     ch = client.services.get_characteristic(CHAR_UUID)
     if not ch:
-        # characteristic을 못 찾으면 안전하게 response=True
+        # 특성을 찾지 못하면 안전하게 response=True 사용
         return True
     props = set(ch.properties or [])
     if "write-without-response" in props and "write" not in props:
@@ -55,7 +54,7 @@ async def connect_arduino():
                 device = d
                 break
         if not device:
-            raise RuntimeError("{TARGET_NAME}을 찾지 못했습니다. 이름/주소를 확인하세요.")
+            raise RuntimeError(f"{TARGET_NAME}을 찾지 못했습니다. 이름/주소를 확인하세요.")
             return
     client = BleakClient(device)
     await client.connect()

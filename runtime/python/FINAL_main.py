@@ -1,7 +1,8 @@
 """
-main.py
-- Example top-level async runner that ties LSL -> preprocess -> model -> Arduino
-- Collects 3 seconds of data (256 Hz × 3 = 768 samples) and predicts using the average.
+최종 실시간 실행 진입점.
+
+- LSL 입력 → 전처리 → 모델 추론 → Arduino 전송 흐름을 연결한다.
+- 3초 분량의 EEG 데이터를 모아 1초마다 예측을 수행한다.
 """
 
 import asyncio
@@ -9,14 +10,13 @@ import time
 from pathlib import Path
 
 import numpy as np
-from numpy.f2py.auxfuncs import throw_error
 
 from model import load_model, async_predict
 from signal_utils import filtering_sample, create_filter, normalize_signal
 from lsl_stream import connect_stream, read_sample
 from arduino_io import connect_arduino, push_char
 
-# --- Configuration ---
+# --- 설정값 ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = PROJECT_ROOT / "models" / "FINAL_raw_data_model.pth"
 NORM_PARAMS_PATH = PROJECT_ROOT / "models" / "FINAL_normalization_params.pth"
@@ -25,16 +25,16 @@ MODEL_HID = 16
 MODEL_OUT = 4
 ARDUINO_BAUD = 9600
 
-FS = 256     # Hz (samples per second)
-DURATION = 3 # seconds
-WINDOW_SIZE = FS * DURATION  # 768 samples
-PRED_DURATION = 1 # seconds
-PRED_WINDOW_SIZE = FS * PRED_DURATION # samples
+FS = 256     # Hz (초당 샘플 수)
+DURATION = 3 # 초
+WINDOW_SIZE = FS * DURATION  # 768 샘플
+PRED_DURATION = 1 # 초
+PRED_WINDOW_SIZE = FS * PRED_DURATION # 샘플 수
 msg_dict = {0:'L', 1 : 'R', 2 :'S', 3:'S'}
-labels = ('Left', 'Right', 'Forward', 'Forward')
+labels = ('좌회전', '우회전', '직진', '직진')
 
 async def worker(inlet, model, arduino, port, filter, state):
-    buffer = np.zeros((20, WINDOW_SIZE))  # stores incoming samples
+    buffer = np.zeros((20, WINDOW_SIZE))  # 입력 특징 버퍼
     cur = 0
     start_time = time.time()
     await push_char(arduino, port, 'a')
@@ -45,17 +45,17 @@ async def worker(inlet, model, arduino, port, filter, state):
             await asyncio.sleep(0.01)
             continue
         try:
-            # LSL sample to numpy array
+            # LSL 샘플을 numpy 배열로 변환
             raw = np.asarray(sample)
             filtering_sample(raw, filter, state, buffer, cur)
             cur += 1
             if cur % PRED_WINDOW_SIZE == 0:
                 x = normalize_signal(buffer)
                 out = await async_predict(model, x)
-                # Convert to label
+                # 예측 결과를 제어 라벨로 변환
                 label = int(out.argmax(dim=-1).item()) if hasattr(out, "argmax") else int(np.argmax(out))
                 msg = f"{msg_dict[label]}\n"
-                # Send to Arduino
+                # Arduino로 제어 명령 전송
                 await push_char(arduino, port, msg)
 
                 current_time = time.time() - start_time
@@ -66,7 +66,7 @@ async def worker(inlet, model, arduino, port, filter, state):
             if cur >= WINDOW_SIZE: cur = 0
 
         except Exception as e:
-            print(f"[worker] error processing block: {e}")
+            print(f"[worker] 블록 처리 중 오류: {e}")
             await push_char(arduino, port, 'z')
             await asyncio.sleep(0.05)
             return
@@ -84,22 +84,22 @@ async def worker(inlet, model, arduino, port, filter, state):
 
 
 async def main():
-    print("Loading model...")
+    print("모델을 불러오는 중...")
     model = load_model(MODEL_PATH, NORM_PARAMS_PATH, input_size=MODEL_IN, hidden_size=MODEL_HID, output_size=MODEL_OUT, map_location="cpu")
 
-    print("Connecting to LSL...")
+    print("LSL 스트림에 연결하는 중...")
     inlet = await connect_stream("EEG", timeout=5.0)
-    print("Connected to LSL stream.")
+    print("LSL 스트림 연결 완료")
     # inlet = None
 
-    print("Connecting to Arduino...")
+    print("Arduino에 연결하는 중...")
     arduino, port = await connect_arduino()
-    print("Connected to Arduino.")
+    print("Arduino 연결 완료")
     # arduino, port = None, None
 
     filter, state = create_filter(FS)
 
-    print(f"Collecting {DURATION}s windows ({WINDOW_SIZE} samples per prediction)...")
+    print(f"{DURATION}초 창({WINDOW_SIZE}개 샘플) 기준으로 예측을 시작합니다...")
     try:
         await worker(inlet, model, arduino, port, filter, state)
     except KeyboardInterrupt:
@@ -115,4 +115,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
 
-        print("Interrupted by user.")
+        print("사용자에 의해 실행이 중단되었습니다.")

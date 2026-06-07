@@ -1,7 +1,9 @@
 """
-signal_utils.py
-- basic signal preprocessing helpers (filtering, normalization)
-- These are written to be easy to adapt to your exact preprocessing from the notebook.
+신호 전처리 유틸리티.
+
+- 필터링
+- 정규화
+- 실시간 입력을 모델 입력 형태로 변환하는 보조 함수
 """
 
 import numpy as np
@@ -24,9 +26,11 @@ def normalize_signal(x, eps=1e-8):
     return x
 
 def filtering_sample(raw_sample, iir_filters, filter_states, filtered_eeg, x):
-    """High-level preprocessing: filter + flatten/reshape to model input shape.
-    raw_sample: array-like (channels, samples) or (samples,)
-    Returns: numpy array suitable for model input
+    """고수준 전처리 함수.
+
+    - 대역통과 필터 적용
+    - 채널/대역별 출력을 버퍼에 저장
+    - 이후 정규화 시 사용할 입력 형태를 유지
     """
     for i in range(20):
         filtered_sample, new_state = filter_sample_with_state(raw_sample[i % 4], iir_filters[i], filter_states[i])
