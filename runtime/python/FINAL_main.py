@@ -6,6 +6,7 @@ main.py
 
 import asyncio
 import time
+from pathlib import Path
 
 import numpy as np
 from numpy.f2py.auxfuncs import throw_error
@@ -16,8 +17,9 @@ from lsl_stream import connect_stream, read_sample
 from arduino_io import connect_arduino, push_char
 
 # --- Configuration ---
-MODEL_PATH = "model2_3_jh_just_new.pth"
-NORM_PARAMS_PATH = "norm_params2_3_jh_just_new.pth"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+MODEL_PATH = PROJECT_ROOT / "models" / "FINAL_raw_data_model.pth"
+NORM_PARAMS_PATH = PROJECT_ROOT / "models" / "FINAL_normalization_params.pth"
 MODEL_IN = 20
 MODEL_HID = 16
 MODEL_OUT = 4

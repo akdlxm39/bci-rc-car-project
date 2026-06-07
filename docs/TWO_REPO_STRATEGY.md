@@ -71,8 +71,8 @@ Reason:
 - `00_overview/README.md`
 - `00_overview/GITHUB_PUBLISHING_NOTES.md` (optional, or simplify)
 - `01_presentations/4_final/FINAL_presentation_pretty.pptx`
-- `03_models/final/FINAL_model2_3_jh_just_new.pth`
-- `03_models/final/FINAL_norm_params2_3_jh_just_new.pth`
+- `03_models/final/FINAL_raw_data_model.pth`
+- `03_models/final/FINAL_normalization_params.pth`
 - `04_runtime/python/FINAL_main.py`
 - `04_runtime/python/model.py`
 - `04_runtime/python/signal_utils.py`

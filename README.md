@@ -1,80 +1,87 @@
-# BCI RC Car Project
+# BCI RC카 프로젝트
 
-> **EEG-based brain-computer interface project for controlling an RC car in real time** using **Muse 2**, **PyTorch**, **LSL**, **BLE (HM-10)**, and **Arduino**.
+> **Muse 2, PyTorch, LSL, BLE(HM-10), Arduino**를 활용해  
+> **뇌파(EEG) 기반으로 RC카를 실시간 제어**한 프로젝트입니다.
 
-## Overview
-This project explores how brainwave signals can be used as an input interface for physical control.
-We built a pipeline that:
+## 프로젝트 개요
+이 프로젝트는 뇌파를 입력 인터페이스로 활용해, 사용자의 의도를 실시간으로 분류하고  
+그 결과를 RC카 제어 명령으로 연결하는 **BCI(Brain-Computer Interface)** 시스템을 구현하는 것을 목표로 합니다.
 
-1. measures EEG signals from a **Muse 2** headset,
-2. preprocesses the signal into band-based features,
-3. classifies user intent with a **PyTorch** model,
-4. sends the predicted command to an **Arduino-controlled RC car**,
-5. executes real-world motion such as left turn, right turn, and forward movement.
+최종 시스템은 다음 흐름으로 동작합니다.
 
-This repository is the **clean public-facing deliverable** version of the project.
-It contains the final runtime code, final model artifacts, final presentation, and a curated public EEG dataset subset.
+1. **Muse 2** 헤드셋으로 EEG 신호를 측정
+2. 주파수 대역별 특징(feature) 추출
+3. **PyTorch 분류 모델**로 사용자 의도 분류
+4. 분류 결과를 **BLE(HM-10)** 로 Arduino에 전송
+5. Arduino가 RC카를 실제로 제어
+
+이 저장소는 프로젝트의 **최종 결과물 중심 공개용 저장소**입니다.  
+최종 발표 자료, 최종 실행 코드, 최종 모델을 포함합니다.
 
 ---
 
-## What the system does
-### Signal classes
+## 시스템 동작 정의
+
+### 분류 클래스
 - `left`
 - `right`
 - `blink`
 - `none`
 
-### Control mapping
-- `left` → left turn
-- `right` → right turn
-- `blink` → forward
-- `none` → forward
+### RC카 제어 매핑
+- `left` → 좌회전
+- `right` → 우회전
+- `blink` → 직진
+- `none` → 직진
 
-### Core idea
-The system maps EEG-derived intent classes to RC car commands in real time.
-In the final setup, `blink` and `none` were both treated as forward-driving states, while `left` and `right` triggered right-angle turning behavior.
+### 최종 제어 방식
+최종 구현에서는 `blink`와 `none`을 모두 **전진 계열 상태**로 사용하고,  
+`left`, `right`는 **직각 회전** 동작으로 연결했습니다.
 
 ---
 
-## Technical pipeline
-### Hardware
-- **Muse 2** EEG headset
-- **HM-10 BLE module**
-- **Arduino-based RC car**
+## 기술 구성
 
-### Software
-- **PyTorch** for intent classification
-- **LSL (Lab Streaming Layer)** for real-time EEG streaming
-- **Python** for runtime inference and communication
-- **Arduino** for motor control
+### 하드웨어
+- **Muse 2** EEG 헤드셋
+- **HM-10 BLE 모듈**
+- **Arduino 기반 RC카**
 
-### Feature extraction
-The project uses **4 EEG channels** and **5 frequency bands**, producing a **20-dimensional feature vector**:
+### 소프트웨어
+- **PyTorch**: 뇌파 분류 모델
+- **LSL (Lab Streaming Layer)**: 실시간 EEG 스트리밍
+- **Python**: 실시간 추론 및 BLE 통신
+- **Arduino**: RC카 모터 제어
+
+---
+
+## 특징 추출 방식
+최종 파이프라인에서는 **4개 채널**과 **5개 주파수 대역**을 사용해  
+총 **20차원 feature vector**를 구성합니다.
+
+### 사용 채널
+- TP9
+- AF7
+- AF8
+- TP10
+
+### 사용 주파수 대역
 - Alpha: 8–12 Hz
 - Beta 1: 12–20 Hz
 - Beta 2: 20–30 Hz
 - Gamma 1: 30–35 Hz
 - Gamma 2: 35–40 Hz
 
----
+즉,
 
-## Repository contents
-### Final artifacts
-- Final presentation: `presentation/FINAL_presentation_pretty.pptx`
-- Final runtime entrypoint: `runtime/python/FINAL_main.py`
-- Final Arduino sketch: `runtime/arduino/FINAL_right_angle_rc.ino`
-- Final model weights: `models/FINAL_model2_3_jh_just_new.pth`
-- Final normalization params: `models/FINAL_norm_params2_3_jh_just_new.pth`
-- Final training notebook: `notebooks/FINAL_training_notebook.ipynb`
+- **4채널 × 5대역 = 20차원 feature**
 
-### Public data included here
-- Curated training-ready EEG subset: `data/Participant2_filtered_final/`
-- Intermediate analysis outputs: `data/intermediate_outputs/`
-- Legacy excluded class sample: `data/legacy_class_foot/foot0.csv`
+로 구성됩니다.
 
 ---
 
-## Project structure
+## 저장소 구성
+
 ```text
 bci-rc-car-project/
   data/
@@ -85,45 +92,48 @@ bci-rc-car-project/
   runtime/
 ```
 
-- `data/` — curated public EEG subset and derived outputs
-- `docs/` — publishing and repository notes
-- `models/` — final trained model artifacts
-- `notebooks/` — final training notebook
-- `presentation/` — final presentation deck
-- `runtime/` — final Python + Arduino execution code
+- `data/`  
+  공개 가능한 EEG 데이터 subset 및 중간 산출물
+- `docs/`  
+  저장소 설명 및 배포 관련 문서
+- `models/`  
+  최종 학습 모델 파일
+- `notebooks/`  
+  최종 학습 노트북
+- `presentation/`  
+  최종 발표 자료
+- `runtime/`  
+  최종 실행 Python / Arduino 코드
 
 ---
 
-## Participant anonymization
-Public-facing data and documentation use anonymized participant labels:
-- `Participant1`
-- `Participant2`
-- `Participant3`
+## 주요 파일
 
-The curated final personalized training subset included in this repository is based on **Participant2**.
+### 최종 발표 자료
+- `presentation/FINAL_presentation_pretty.pptx`
 
----
+### 최종 실행 코드
+- `runtime/python/FINAL_main.py`
 
-## Related repository
-The full development history, experiments, and legacy materials are separated into a companion research repository:
-- `bci-rc-car-research`
+### 최종 Arduino 코드
+- `runtime/arduino/FINAL_right_angle_rc.ino`
 
-This split keeps the present repository focused on the final result while preserving the broader R&D process elsewhere.
+### 최종 모델
+- `models/FINAL_raw_data_model.pth`
+- `models/FINAL_normalization_params.pth`
 
----
-
-## Why this project matters
-This project is a small but concrete example of how **brain-computer interfaces** can move beyond software-only demos and connect directly to **physical systems**.
-It also highlights practical challenges in BCI work, including:
-- signal variability,
-- preprocessing choices,
-- per-user differences,
-- real-time control constraints,
-- and the gap between classification accuracy and usable physical interaction.
+### 최종 학습 노트북
+- `notebooks/FINAL_training_notebook.ipynb`
 
 ---
 
-## Notes
-- This repository prioritizes clarity and final deliverables over full experimental history.
-- Large-scale research artifacts and earlier workflow iterations are intentionally kept outside this repo.
-- EEG files included here are intentionally public and anonymized for this project context.
+## 프로젝트 의의
+이 프로젝트는 뇌파 기반 BCI가 단순한 소프트웨어 분류 실험을 넘어서,  
+**실제 물리 시스템(RC카)** 과 연결될 수 있음을 보여주는 예시입니다.
+
+또한 다음과 같은 현실적인 문제들을 함께 다룹니다.
+
+- EEG 신호의 개인차
+- 전처리 방식의 영향
+- 실시간 제어와 분류 정확도의 차이
+- 실제 사용 가능한 동작 설계의 어려움
